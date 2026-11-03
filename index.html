@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0b6b5c"><title>RHYTHM</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef3f1;--card:#fff;--tx:#17211e;--mu:#5d6b66;--ac:#0b6b5c;--acx:#fff;--ok:#166534;--okb:#d9f5e3;--bad:#9f1d1d;--badb:#fde2e2;--bd:#d5dfdb;--sel:#e1f0ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1514;--card:#182120;--tx:#e8f0ed;--mu:#9fb0aa;--ac:#38b59f;--acx:#06201b;--ok:#86efac;--okb:#12301e;--bad:#fca5a5;--badb:#3a1818;--bd:#2a3836;--sel:#1d3330}}
+:root[data-theme="dark"]{--bg:#0f1514;--card:#182120;--tx:#e8f0ed;--mu:#9fb0aa;--ac:#38b59f;--acx:#06201b;--ok:#86efac;--okb:#12301e;--bad:#fca5a5;--badb:#3a1818;--bd:#2a3836;--sel:#1d3330}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 "Hind Siliguri",system-ui,sans-serif;padding-bottom:84px}
+#main{max-width:640px;margin:0 auto;padding:16px}
+h2{margin:8px 0}h3{margin:6px 0 10px}
+.mu{color:var(--mu)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:12px 0}
+.c{text-align:center}.big{font-size:44px;font-weight:600;color:var(--ac)}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:10px 0}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:10px 14px}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.pri{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:600;width:100%}
+.row .pri{width:auto;flex:1}
+.sm{padding:6px 12px}.del{color:var(--bad)}
+.opt{display:block;width:100%;text-align:left;margin:8px 0}
+.opt.sel{background:var(--sel);border-color:var(--ac)}
+.opt.ok{background:var(--okb);border-color:var(--ok);color:var(--ok)}
+.opt.bad{background:var(--badb);border-color:var(--bad);color:var(--bad)}
+.rok{border-left:5px solid var(--ok)}.rbad{border-left:5px solid var(--bad)}
+input[type=text],input[type=number],textarea{font:inherit;width:100%;padding:9px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);margin:4px 0}
+textarea{min-height:70px}
+input[type=radio]{width:20px;height:20px;flex:none;accent-color:var(--ac)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;border-radius:0;padding:14px 4px;background:none;color:var(--mu)}
+nav button[hidden]{display:none}
+.hb{display:block;width:100%;text-align:left;padding:18px;margin:12px 0;font-size:18px;font-weight:600}
+.hb small{display:block;font-weight:400;color:var(--mu);font-size:14px}
+select{font:inherit;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;margin:4px 0}
+nav button.on{color:var(--ac);font-weight:600;box-shadow:inset 0 3px var(--ac)}
+.brand{text-align:center;padding:14px 0 4px}.brand h1{margin:0;font-size:40px;letter-spacing:6px;color:var(--ac)}.brand p{margin:2px 0 0}
+</style></head><body>
+<div id="main"></div>
+<nav><button id="th" onclick="setV('home')">হোম</button><button id="ta" hidden onclick="setV('admin')">অ্যাডমিন</button></nav>
+<script src="config.js"></script>
+<script src="questions.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const L=['ক','খ','গ','ঘ'];
+const fmt=s=>bn(String(Math.max(0,Math.floor(s/60))).padStart(2,'0')+':'+String(Math.max(0,s%60)).padStart(2,'0'));
+const DEFC=[{id:'sub',n:'বিষয় ভিত্তিক অনুশীলন',m:'p'},{id:'mock',n:'মক টেস্ট',m:'e'},{id:'model',n:'মডেল',m:'e'},{id:'past',n:'বিগত সালের প্রশ্ন',m:'b'}];
+let C={},CK=[];
+function mapC(){C={};DB.cats.forEach(c=>C[c.id]={n:c.n,m:c.m});CK=DB.cats.map(c=>c.id)}
+const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){}};
+let ADMIN=LS('adm')==='1',REG=null;try{REG=JSON.parse(LS('reg'))}catch(e){}
+let DB=ADMIN&&LS('draft')?JSON.parse(LS('draft')):JSON.parse(JSON.stringify(QDATA)),V='home',CAT=null,run=null,edit=null,tm=null,dirty=false;
+if(!DB.cats)DB.cats=JSON.parse(JSON.stringify(DEFC));if(!DB.time)DB.time={};mapC();
+const qs=(c,g)=>DB.questions.filter(x=>x.cat===c&&(g===undefined||x.grp===g));
+const grps=c=>[...new Set(qs(c).map(x=>x.grp))];
+function stop(){clearInterval(tm)}
+function setV(v){stop();run=null;V=v;edit=null;draw();scrollTo(0,0)}
+function openCat(c){CAT=c;V='cat';draw();scrollTo(0,0)}
+function draw(){if(ADMIN&&dirty)LS('draft',JSON.stringify(DB));document.querySelector('nav').style.display=(REG||ADMIN)?'':'none';$('#ta').hidden=!ADMIN;if(!REG&&!ADMIN&&!run)return regScreen();$('#th').classList.toggle('on',V==='home'&&!run);$('#ta').classList.toggle('on',V==='admin'&&!run);
+if(V==='admin'&&!ADMIN)V='home';
+if(run)return quiz();
+const m=$('#main');
+if(V==='home'){m.innerHTML='<div class="brand"><h1>RHYTHM</h1><p class="mu">A Smart MCQ Guide For Nurses</p></div>'+(REG?`<p class="mu">স্বাগতম, ${esc(REG.name)}</p>`:'')+CK.map(c=>`<button class="hb" onclick="openCat('${c}')">${C[c].n}<small>${bn(qs(c).length)}টি প্রশ্ন</small></button>`).join('')+(ADMIN?'':'<p class="c"><button class="sm" onclick="adminLogin()">অ্যাডমিন লগইন</button></p>')}
+else if(V==='cat'){const g=grps(CAT),md=C[CAT].m;
+m.innerHTML=`<button class="sm" onclick="setV('home')">← ফিরে যান</button><h2>${C[CAT].n}</h2>`+(g.length?g.map((x,i)=>{const n=qs(CAT,x).length,t=DB.time[CAT+'|'+x]||n;
+return `<div class="card"><b>${esc(x)}</b><div class="mu">${bn(n)}টি প্রশ্ন${md!=='p'?' · '+bn(t)+' মিনিট':''}</div><div class="row">${md!=='e'?`<button class="pri" onclick="startG(${i},'p')">অনুশীলন</button>`:''}${md!=='p'?`<button class="pri" onclick="startG(${i},'e')">পরীক্ষা দিন</button>`:''}</div></div>`}).join(''):'<p class="mu">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</p>')}
+else admin()}
+function startG(i,mode){const g=grps(CAT)[i],list=qs(CAT,g).sort(()=>Math.random()-.5);
+run={mode,list,i:0,ans:list.map(()=>null),left:(DB.time[CAT+'|'+g]||list.length)*60};
+if(mode==='e')tm=setInterval(()=>{run.left--;const t=$('#tm');if(t)t.textContent=fmt(run.left);if(run.left<=0)finish()},1000);
+draw()}
+function quiz(){const r=run,q=r.list[r.i],a=r.ans[r.i],p=r.mode==='p';
+let h=`<div class="row"><span class="mu">প্রশ্ন ${bn(r.i+1)}/${bn(r.list.length)}</span>${p?'':`<b id="tm">${fmt(r.left)}</b>`}<button class="sm" onclick="if(confirm('বন্ধ করবেন?'))setV(V)">বন্ধ করুন</button></div><div class="card"><h3>${esc(q.q)}</h3>`;
+q.o.forEach((o,k)=>{let c='opt';if(p&&a!==null){if(k===q.a)c+=' ok';else if(k===a)c+=' bad'}else if(!p&&a===k)c+=' sel';
+h+=`<button class="${c}" onclick="pick(${k})">${L[k]}. ${esc(o)}</button>`});
+h+='</div>';
+if(p&&a!==null&&q.e)h+=`<div class="card"><b>ব্যাখ্যা:</b> ${esc(q.e)}</div>`;
+h+='<div class="row">';
+if(!p&&r.i>0)h+='<button onclick="go(-1)">← আগের</button>';
+if(r.i<r.list.length-1)h+=`<button class="pri" onclick="go(1)">${p&&a===null?'এড়িয়ে যান':'পরের →'}</button>`;
+else h+=`<button class="pri" onclick="finish()">${p?'ফলাফল দেখুন':'জমা দিন'}</button>`;
+$('#main').innerHTML=h+'</div>'}
+function pick(k){if(run.mode==='p'&&run.ans[run.i]!==null)return;run.ans[run.i]=k;quiz()}
+function go(d){run.i+=d;quiz();scrollTo(0,0)}
+function finish(){stop();const r=run;if(!r)return;let s=0;r.list.forEach((q,i)=>{if(r.ans[i]===q.a)s++});
+const n=r.list.length,pc=Math.round(s*100/n);
+let h=`<div class="card c"><h2>ফলাফল</h2><div class="big">${bn(s)}/${bn(n)}</div><p class="mu">${bn(pc)}%</p></div><h3>পর্যালোচনা</h3>`;
+r.list.forEach((q,i)=>{const a=r.ans[i],ok=a===q.a;
+h+=`<div class="card ${ok?'rok':'rbad'}"><b>${bn(i+1)}. ${esc(q.q)}</b><p>আপনার উত্তর: ${a===null?'দেননি':esc(q.o[a])}</p>${ok?'':`<p>সঠিক উত্তর: <b>${esc(q.o[q.a])}</b></p>`}${q.e?`<p class="mu">${esc(q.e)}</p>`:''}</div>`});
+run=null;$('#main').innerHTML=h+'<button class="pri" onclick="setV(V)">শেষ করুন</button>';scrollTo(0,0);$('#th').classList.toggle('on',V==='home')}
+function admin(){const e=edit!==null?DB.questions[edit]:{cat:'sub',grp:'',q:'',o:['','','',''],a:0,e:''};
+let h=`<h2>অ্যাডমিন প্যানেল</h2><div class="card"><p>${dirty?'<b>অপ্রকাশিত পরিবর্তন আছে।</b> ':''}পরিবর্তন শেষে নিচের বাটনে questions.js ডাউনলোড করুন এবং হোস্টিং-এ পুরোনো questions.js ফাইলের বদলে আপলোড করুন। তবেই শিক্ষার্থীরা নতুন প্রশ্ন পাবে।</p><button class="pri" onclick="pub()">questions.js ডাউনলোড করুন</button><div class="row"><button class="sm" onclick="if(confirm('ড্রাফট বাতিল করবেন?')){LS('draft','');location.reload()}">ড্রাফট বাতিল</button><button class="sm" onclick="LS('adm','0');ADMIN=false;V='home';draw()">লগআউট</button></div></div>`;
+h+=btnCard();h+=`<div class="card"><b>${edit!==null?'প্রশ্ন সম্পাদনা':'নতুন প্রশ্ন'}</b><select id="fc">${CK.map(c=>`<option value="${c}" ${e.cat===c?'selected':''}>${C[c].n}</option>`).join('')}</select><input type="text" id="fg" list="gl" placeholder="বিষয় / টেস্টের নাম / সাল" value="${esc(e.grp)}"><datalist id="gl">${[...new Set(DB.questions.map(x=>x.grp))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><textarea id="fq" placeholder="প্রশ্ন লিখুন">${esc(e.q)}</textarea>`;
+for(let k=0;k<4;k++)h+=`<div class="row"><input type="radio" name="ca" value="${k}" ${e.a===k?'checked':''}><input type="text" id="fo${k}" placeholder="অপশন ${L[k]}" value="${esc(e.o[k]||'')}"></div>`;
+h+=`<p class="mu">সঠিক উত্তরের পাশের গোল বাটন সিলেক্ট করুন।</p><textarea id="fe" placeholder="ব্যাখ্যা (ঐচ্ছিক)">${esc(e.e||'')}</textarea><div class="row"><button class="pri" onclick="saveQ()">${edit!==null?'আপডেট করুন':'প্রশ্ন যোগ করুন'}</button>${edit!==null?'<button onclick="edit=null;draw()">বাতিল</button>':''}</div></div>`;
+h+=`<h3>টেস্টের সময়</h3>`;
+CK.filter(c=>C[c].m!=='p').forEach(c=>grps(c).forEach((g,i)=>{h+=`<div class="row"><span>${C[c].n}: ${esc(g)}</span><button class="sm" onclick="setTime('${c}',${i})">${bn(DB.time[c+'|'+g]||qs(c,g).length)} মিনিট</button></div>`}));
+h+=`<h3>সব প্রশ্ন (${bn(DB.questions.length)}টি)</h3>`;
+DB.questions.forEach((q,i)=>h+=`<div class="card"><span class="mu">${C[q.cat].n} · ${esc(q.grp)}</span><br><b>${esc(q.q)}</b><div class="row"><button class="sm" onclick="edit=${i};draw();scrollTo(0,0)">এডিট</button><button class="sm del" onclick="delQ(${i})">মুছুন</button></div></div>`);
+h+=`<div class="card"><b>একসাথে অনেক প্রশ্ন (ইমপোর্ট/ব্যাকআপ)</b><textarea id="jx" rows="5">${esc(JSON.stringify(DB.questions))}</textarea><button class="sm" onclick="imp()">ইমপোর্ট (বর্তমান সব প্রশ্ন বদলে যাবে)</button></div>`;
+$('#main').innerHTML=h}
+function btnCard(){return `<div class="card"><b>বাটন ব্যবস্থাপনা</b>`+DB.cats.map((c,i)=>`<div class="row"><span>${esc(c.n)} <span class="mu">(${bn(qs(c.id).length)}টি প্রশ্ন)</span></span><button class="sm del" onclick="delCat(${i})">মুছুন</button></div>`).join('')+`<input type="text" id="cn" placeholder="নতুন বাটনের নাম"><select id="cm"><option value="p">অনুশীলন (সাথে সাথে উত্তর দেখাবে)</option><option value="e">পরীক্ষা (টাইমারসহ)</option><option value="b">দুটোই</option></select><button class="pri" onclick="addCat()">বাটন যোগ করুন</button></div>`}
+function addCat(){const n=$('#cn').value.trim();if(!n){alert('বাটনের নাম দিন');return}DB.cats.push({id:'c'+Date.now().toString(36),n,m:$('#cm').value});mapC();dirty=true;draw()}
+function delCat(i){const c=DB.cats[i];if(!confirm('"'+c.n+'" বাটন ও এর সব প্রশ্ন মুছে ফেলবেন?'))return;DB.questions=DB.questions.filter(q=>q.cat!==c.id);DB.cats.splice(i,1);Object.keys(DB.time).forEach(k=>{if(k.startsWith(c.id+'|'))delete DB.time[k]});mapC();dirty=true;draw()}
+function setTime(c,i){const g=grps(c)[i],v=parseInt(prompt('সময় (মিনিট):',DB.time[c+'|'+g]||qs(c,g).length));if(v>0){DB.time[c+'|'+g]=v;dirty=true;draw()}}
+function saveQ(){const q=$('#fq').value.trim(),grp=$('#fg').value.trim(),o=[0,1,2,3].map(k=>$('#fo'+k).value.trim());
+const c=+(document.querySelector('input[name=ca]:checked')||{value:0}).value;
+if(!q||!grp||o.filter(Boolean).length<2||!o[c]){alert('বিষয়/নাম, প্রশ্ন, কমপক্ষে ২টি অপশন এবং সঠিক উত্তর দিন');return}
+const opts=[],map={};o.forEach((x,k)=>{if(x){map[k]=opts.length;opts.push(x)}});
+const it={cat:$('#fc').value,grp,q,o:opts,a:map[c],e:$('#fe').value.trim()};
+if(edit!==null)DB.questions[edit]=it;else DB.questions.push(it);edit=null;dirty=true;draw()}
+function delQ(i){if(confirm('এই প্রশ্নটি মুছে ফেলবেন?')){DB.questions.splice(i,1);dirty=true;draw()}}
+function imp(){try{const v=JSON.parse($('#jx').value);
+if(!Array.isArray(v)||!v.every(x=>x&&C[x.cat]&&x.grp&&typeof x.q==='string'&&Array.isArray(x.o)&&x.o.length>=2&&x.o[x.a]!==undefined))throw 0;
+DB.questions=v;dirty=true;draw()}catch(e){alert('ইমপোর্ট করা যায়নি। ফরম্যাট ঠিক আছে কিনা দেখুন।')}}
+function pub(){const t='window.QDATA='+JSON.stringify(DB,null,1)+';';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/javascript'}));a.download='questions.js';document.body.appendChild(a);a.click();a.remove();dirty=false}
+function adminLogin(){const p=prompt('অ্যাডমিন পাসওয়ার্ড:');if(p===null)return;if(p===CFG.ADMIN_PASSWORD){LS('adm','1');ADMIN=true;V='admin';draw()}else alert('পাসওয়ার্ড ঠিক নয়')}
+function regScreen(){$('#main').innerHTML=`<div class="brand"><h1>RHYTHM</h1><p class="mu">A Smart MCQ Guide For Nurses</p></div><h2>সাইন আপ</h2><p class="mu">অ্যাপ ব্যবহারের জন্য নিচের তথ্য দিন। তথ্য অ্যাপের পরিচালকের কাছে জমা হবে।</p><div class="card"><label>নাম</label><input type="text" id="rn"><label>প্রতিষ্ঠানের নাম</label><input type="text" id="ri"><label>মোবাইল নম্বর</label><input type="text" id="rm" inputmode="numeric" placeholder="01XXXXXXXXX"><label>কোর্স</label><input type="text" id="rc"><br><br><button class="pri" onclick="doReg()">সাইন আপ করুন</button></div><p class="c"><button class="sm" onclick="adminLogin()">অ্যাডমিন লগইন</button></p>`}
+function doReg(){const r={name:$('#rn').value.trim(),inst:$('#ri').value.trim(),mobile:$('#rm').value.trim().replace(/[০-৯]/g,d=>'০১২৩৪৫৬৭৮৯'.indexOf(d)),course:$('#rc').value.trim()};
+if(!r.name||!r.inst||!r.course){alert('সবগুলো ঘর পূরণ করুন');return}
+if(!/^01\d{9}$/.test(r.mobile)){alert('সঠিক মোবাইল নম্বর দিন (১১ ডিজিট, 01 দিয়ে শুরু)');return}
+REG=r;LS('reg',JSON.stringify(r));LS('sent','0');sendReg(r);draw()}
+function sendReg(r){const f=CFG.FIELDS;if(!CFG.FORM_URL||!f.name)return;const b=new URLSearchParams();b.append(f.name,r.name);b.append(f.inst,r.inst);b.append(f.mobile,r.mobile);b.append(f.course,r.course);
+fetch(CFG.FORM_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b}).then(()=>LS('sent','1')).catch(()=>{})}
+if(REG&&LS('sent')!=='1')sendReg(REG);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+draw();
+</script></body></html>
