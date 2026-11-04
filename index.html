@@ -38,6 +38,8 @@ nav button[hidden]{display:none}
 select{font:inherit;padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);width:100%;margin:4px 0}
 nav button.on{color:var(--ac);font-weight:600;box-shadow:inset 0 3px var(--ac)}
 .brand{text-align:center;padding:14px 0 4px}.brand h1{margin:0;font-size:40px;letter-spacing:6px;color:var(--ac)}.brand p{margin:2px 0 0}
+#off{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px;z-index:99}#off .card{max-width:420px}
+.lnk{display:inline-block;text-align:center;text-decoration:none;border-radius:10px;padding:10px 14px;border:1px solid var(--bd);color:var(--tx)}.pri.lnk{color:var(--acx);border-color:var(--ac)}
 </style></head><body>
 <div id="main"></div>
 <nav><button id="th" onclick="setV('home')">হোম</button><button id="ta" hidden onclick="setV('admin')">অ্যাডমিন</button></nav>
@@ -55,7 +57,7 @@ function mapC(){C={};DB.cats.forEach(c=>C[c.id]={n:c.n,m:c.m});CK=DB.cats.map(c=
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){}};
 let ADMIN=LS('adm')==='1',REG=null;try{REG=JSON.parse(LS('reg'))}catch(e){}
 let DB=ADMIN&&LS('draft')?JSON.parse(LS('draft')):JSON.parse(JSON.stringify(QDATA)),V='home',CAT=null,run=null,edit=null,tm=null,dirty=false;
-if(!DB.cats)DB.cats=JSON.parse(JSON.stringify(DEFC));if(!DB.time)DB.time={};mapC();
+if(!DB.cats)DB.cats=JSON.parse(JSON.stringify(DEFC));if(!DB.time)DB.time={};if(!DB.pdfs)DB.pdfs=[];mapC();
 const qs=(c,g)=>DB.questions.filter(x=>x.cat===c&&(g===undefined||x.grp===g));
 const grps=c=>[...new Set(qs(c).map(x=>x.grp))];
 function stop(){clearInterval(tm)}
@@ -65,11 +67,11 @@ function draw(){if(ADMIN&&dirty)LS('draft',JSON.stringify(DB));document.querySel
 if(V==='admin'&&!ADMIN)V='home';
 if(run)return quiz();
 const m=$('#main');
-if(V==='home'){m.innerHTML='<div class="brand"><h1>RHYTHM</h1><p class="mu">A Smart MCQ Guide For Nurses</p></div>'+(REG?`<p class="mu">স্বাগতম, ${esc(REG.name)}</p>`:'')+CK.map(c=>`<button class="hb" onclick="openCat('${c}')">${C[c].n}<small>${bn(qs(c).length)}টি প্রশ্ন</small></button>`).join('')+(ADMIN?'':'<p class="c"><button class="sm" onclick="adminLogin()">অ্যাডমিন লগইন</button></p>')}
+if(V==='home'){m.innerHTML='<div class="brand"><h1>RHYTHM</h1><p class="mu">A Smart MCQ Guide For Nurses</p></div>'+(REG?`<p class="mu">স্বাগতম, ${esc(REG.name)}</p>`:'')+CK.map(c=>`<button class="hb" onclick="openCat('${c}')">${C[c].n}<small>${bn(qs(c).length)}টি প্রশ্ন</small></button>`).join('')+(DB.pdfs.length?`<button class="hb" onclick="setV('pdf')">পিডিএফ ডাউনলোড<small>${bn(DB.pdfs.length)}টি ফাইল</small></button>`:'')+(ADMIN?'':'<p class="c"><button class="sm" onclick="adminLogin()">অ্যাডমিন লগইন</button></p>')}
 else if(V==='cat'){const g=grps(CAT),md=C[CAT].m;
 m.innerHTML=`<button class="sm" onclick="setV('home')">← ফিরে যান</button><h2>${C[CAT].n}</h2>`+(g.length?g.map((x,i)=>{const n=qs(CAT,x).length,t=DB.time[CAT+'|'+x]||n;
 return `<div class="card"><b>${esc(x)}</b><div class="mu">${bn(n)}টি প্রশ্ন${md!=='p'?' · '+bn(t)+' মিনিট':''}</div><div class="row">${md!=='e'?`<button class="pri" onclick="startG(${i},'p')">অনুশীলন</button>`:''}${md!=='p'?`<button class="pri" onclick="startG(${i},'e')">পরীক্ষা দিন</button>`:''}</div></div>`}).join(''):'<p class="mu">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</p>')}
-else admin()}
+else if(V==='pdf')pdfView();else admin()}
 function startG(i,mode){const g=grps(CAT)[i],list=qs(CAT,g).sort(()=>Math.random()-.5);
 run={mode,list,i:0,ans:list.map(()=>null),left:(DB.time[CAT+'|'+g]||list.length)*60};
 if(mode==='e')tm=setInterval(()=>{run.left--;const t=$('#tm');if(t)t.textContent=fmt(run.left);if(run.left<=0)finish()},1000);
@@ -95,7 +97,7 @@ h+=`<div class="card ${ok?'rok':'rbad'}"><b>${bn(i+1)}. ${esc(q.q)}</b><p>আপ
 run=null;$('#main').innerHTML=h+'<button class="pri" onclick="setV(V)">শেষ করুন</button>';scrollTo(0,0);$('#th').classList.toggle('on',V==='home')}
 function admin(){const e=edit!==null?DB.questions[edit]:{cat:'sub',grp:'',q:'',o:['','','',''],a:0,e:''};
 let h=`<h2>অ্যাডমিন প্যানেল</h2><div class="card"><p>${dirty?'<b>অপ্রকাশিত পরিবর্তন আছে।</b> ':''}পরিবর্তন শেষে নিচের বাটনে questions.js ডাউনলোড করুন এবং হোস্টিং-এ পুরোনো questions.js ফাইলের বদলে আপলোড করুন। তবেই শিক্ষার্থীরা নতুন প্রশ্ন পাবে।</p><button class="pri" onclick="pub()">questions.js ডাউনলোড করুন</button><div class="row"><button class="sm" onclick="if(confirm('ড্রাফট বাতিল করবেন?')){LS('draft','');location.reload()}">ড্রাফট বাতিল</button><button class="sm" onclick="LS('adm','0');ADMIN=false;V='home';draw()">লগআউট</button></div></div>`;
-h+=btnCard();h+=`<div class="card"><b>${edit!==null?'প্রশ্ন সম্পাদনা':'নতুন প্রশ্ন'}</b><select id="fc">${CK.map(c=>`<option value="${c}" ${e.cat===c?'selected':''}>${C[c].n}</option>`).join('')}</select><input type="text" id="fg" list="gl" placeholder="বিষয় / টেস্টের নাম / সাল" value="${esc(e.grp)}"><datalist id="gl">${[...new Set(DB.questions.map(x=>x.grp))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><textarea id="fq" placeholder="প্রশ্ন লিখুন">${esc(e.q)}</textarea>`;
+h+=btnCard();h+=pdfCard();h+=`<div class="card"><b>${edit!==null?'প্রশ্ন সম্পাদনা':'নতুন প্রশ্ন'}</b><select id="fc">${CK.map(c=>`<option value="${c}" ${e.cat===c?'selected':''}>${C[c].n}</option>`).join('')}</select><input type="text" id="fg" list="gl" placeholder="বিষয় / টেস্টের নাম / সাল" value="${esc(e.grp)}"><datalist id="gl">${[...new Set(DB.questions.map(x=>x.grp))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist><textarea id="fq" placeholder="প্রশ্ন লিখুন">${esc(e.q)}</textarea>`;
 for(let k=0;k<4;k++)h+=`<div class="row"><input type="radio" name="ca" value="${k}" ${e.a===k?'checked':''}><input type="text" id="fo${k}" placeholder="অপশন ${L[k]}" value="${esc(e.o[k]||'')}"></div>`;
 h+=`<p class="mu">সঠিক উত্তরের পাশের গোল বাটন সিলেক্ট করুন।</p><textarea id="fe" placeholder="ব্যাখ্যা (ঐচ্ছিক)">${esc(e.e||'')}</textarea><div class="row"><button class="pri" onclick="saveQ()">${edit!==null?'আপডেট করুন':'প্রশ্ন যোগ করুন'}</button>${edit!==null?'<button onclick="edit=null;draw()">বাতিল</button>':''}</div></div>`;
 h+=`<h3>টেস্টের সময়</h3>`;
@@ -107,6 +109,11 @@ $('#main').innerHTML=h}
 function btnCard(){return `<div class="card"><b>বাটন ব্যবস্থাপনা</b>`+DB.cats.map((c,i)=>`<div class="row"><span>${esc(c.n)} <span class="mu">(${bn(qs(c.id).length)}টি প্রশ্ন)</span></span><button class="sm del" onclick="delCat(${i})">মুছুন</button></div>`).join('')+`<input type="text" id="cn" placeholder="নতুন বাটনের নাম"><select id="cm"><option value="p">অনুশীলন (সাথে সাথে উত্তর দেখাবে)</option><option value="e">পরীক্ষা (টাইমারসহ)</option><option value="b">দুটোই</option></select><button class="pri" onclick="addCat()">বাটন যোগ করুন</button></div>`}
 function addCat(){const n=$('#cn').value.trim();if(!n){alert('বাটনের নাম দিন');return}DB.cats.push({id:'c'+Date.now().toString(36),n,m:$('#cm').value});mapC();dirty=true;draw()}
 function delCat(i){const c=DB.cats[i];if(!confirm('"'+c.n+'" বাটন ও এর সব প্রশ্ন মুছে ফেলবেন?'))return;DB.questions=DB.questions.filter(q=>q.cat!==c.id);DB.cats.splice(i,1);Object.keys(DB.time).forEach(k=>{if(k.startsWith(c.id+'|'))delete DB.time[k]});mapC();dirty=true;draw()}
+const pdfUrl=f=>/^https?:\/\//i.test(f)?f:encodeURI(f.replace(/^\/+/,''));
+function pdfView(){$('#main').innerHTML=`<button class="sm" onclick="setV('home')">← ফিরে যান</button><h2>পিডিএফ ডাউনলোড</h2>`+DB.pdfs.map(p=>`<div class="card"><b>${esc(p.t)}</b><div class="row"><a class="pri lnk" href="${esc(pdfUrl(p.f))}" download>ডাউনলোড</a><a class="lnk" href="${esc(pdfUrl(p.f))}" target="_blank" rel="noopener">দেখুন</a></div></div>`).join('')}
+function pdfCard(){return `<div class="card"><b>পিডিএফ ব্যবস্থাপনা</b><p class="mu">আগে GitHub-এ পিডিএফ ফাইলটি আপলোড করুন, তারপর এখানে শিরোনাম ও ফাইলের নাম (যেমন anatomy.pdf) লিখুন।</p>`+DB.pdfs.map((p,i)=>`<div class="row"><span>${esc(p.t)} <span class="mu">(${esc(p.f)})</span></span><button class="sm del" onclick="delPdf(${i})">মুছুন</button></div>`).join('')+`<input type="text" id="pt" placeholder="শিরোনাম"><input type="text" id="pf" placeholder="ফাইলের নাম বা লিংক (anatomy.pdf)"><button class="pri" onclick="addPdf()">পিডিএফ যোগ করুন</button></div>`}
+function addPdf(){const t=$('#pt').value.trim(),f=$('#pf').value.trim();if(!t||!f){alert('শিরোনাম ও ফাইলের নাম দিন');return}DB.pdfs.push({t,f});dirty=true;draw()}
+function delPdf(i){if(confirm('এই পিডিএফ তালিকা থেকে সরাবেন? (GitHub-এ ফাইল থেকে যাবে)')){DB.pdfs.splice(i,1);dirty=true;draw()}}
 function setTime(c,i){const g=grps(c)[i],v=parseInt(prompt('সময় (মিনিট):',DB.time[c+'|'+g]||qs(c,g).length));if(v>0){DB.time[c+'|'+g]=v;dirty=true;draw()}}
 function saveQ(){const q=$('#fq').value.trim(),grp=$('#fg').value.trim(),o=[0,1,2,3].map(k=>$('#fo'+k).value.trim());
 const c=+(document.querySelector('input[name=ca]:checked')||{value:0}).value;
@@ -128,6 +135,10 @@ REG=r;LS('reg',JSON.stringify(r));LS('sent','0');sendReg(r);draw()}
 function sendReg(r){const f=CFG.FIELDS;if(!CFG.FORM_URL||!f.name)return;const b=new URLSearchParams();b.append(f.name,r.name);b.append(f.inst,r.inst);b.append(f.mobile,r.mobile);b.append(f.course,r.course);
 fetch(CFG.FORM_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b}).then(()=>LS('sent','1')).catch(()=>{})}
 if(REG&&LS('sent')!=='1')sendReg(REG);
+const OFF=document.createElement('div');OFF.id='off';OFF.innerHTML='<div class="card c"><h2>ইন্টারনেট সংযোগ নেই</h2><p class="mu">RHYTHM ব্যবহার করতে ইন্টারনেট সংযোগ প্রয়োজন। সংযোগ চালু করে আবার চেষ্টা করুন।</p><button class="pri" onclick="chk()">আবার চেষ্টা করুন</button></div>';document.body.appendChild(OFF);
+let busy=false;
+async function chk(){if(busy)return;busy=true;let ok=navigator.onLine;if(ok){try{const c=new AbortController(),t=setTimeout(()=>c.abort(),6000);const r=await fetch('config.js?t='+Date.now(),{cache:'no-store',signal:c.signal});clearTimeout(t);ok=r.ok}catch(e){ok=false}}OFF.style.display=ok?'none':'flex';busy=false}
+addEventListener('online',chk);addEventListener('offline',chk);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()});setInterval(chk,20000);chk();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 draw();
 </script></body></html>
